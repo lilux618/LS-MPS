@@ -1,0 +1,14 @@
+metric,target,baseline,calibrated,synthetic_realized,relative_error
+particles,3000000,100000,3000000.0,3000000,0.0
+neighbor_mean,46,22.6,46.00000000000001,46.0,1.544658121217609e-16
+neighbor_p90,68,32,68.0,73.0,0.0
+neighbor_p99,92,34,92.0,95.0,0.0
+near_wall_ratio,0.23,0.075,0.23,0.23,0.0
+free_surface_ratio,0.27,0.023,0.27,0.27,0.0
+splash_ratio,0.14,0.217,0.14,0.14,0.0
+virtual_particle_ratio,0.11,0.035,0.11000000000000001,0.10999763043478261,1.261617073437678e-16
+wls_ill_conditioned_ratio,0.075,0.012,0.075,0.07487166666666667,0.0
+ppe_iterations,38,12,38.0,38.0,0.0
+cnl_rebuild_interval,8,10,8.0,8.0,0.0
+injected_per_step,24000,1200,24000.0,24000.0,0.0
+deleted_per_step,21500,900,21500.0,21500.0,0.0

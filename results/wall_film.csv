@@ -1,0 +1,2 @@
+case,particles,interior,free_surface,splash,near_wall,wall,neighbor_mean,p50,p90,p99,wls_failed,wls_virtual,ppe_unknowns,ppe_nnz,ppe_iterations,ppe_converged,ppe_residual,ppe_rel_l2,ppe_assembly_ms,ppe_solve_ms
+wall_film,4000,2475,271,0,413,841,26.0495,28,32,32,0,94,2888,71857,282,1,0.000114474,4.06099e-05,4.67958,30.2631
