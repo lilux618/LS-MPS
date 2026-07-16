@@ -1,2 +1,2 @@
-case,particles,interior,free_surface,splash,near_wall,wall,neighbor_mean,p50,p90,p99,truncated,neighbor_ms,classify_ms,wls_ms,wls_sampled,wls_regularized,wls_failed,gradient_rms_error,laplacian_rms_error
-narrow_gap,80000,39984,269,0,6773,32974,27.9628,31,32,32,0,111.362,21.2003,8.58782,2478,0,0,1.32964e-13,3.59445e-11
+case,particles,interior,free_surface,splash,near_wall,wall,neighbor_mean,p50,p90,p99,wls_failed,wls_virtual,ppe_unknowns,ppe_nnz,ppe_iterations,ppe_converged,ppe_residual,ppe_rel_l2,ppe_assembly_ms,ppe_solve_ms
+narrow_gap,80000,39984,269,0,6773,32974,27.9628,31,32,32,0,381,6000,76251,359,1,0.000325491,2.08352e-05,4.15411,45.1719

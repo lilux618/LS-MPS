@@ -1,21 +1,39 @@
-# LS-MPS Industrial Workload Benchmark v0.1
+# LS-MPS Industrial Workload Benchmark v0.2
 
-这个项目不是完整工业求解器，而是把《LS-MPS算法原理及优化》中的核心理解量化为可运行 benchmark：
+本项目将 LS-MPS 的算法理解拆成两条相互独立的验证链：
 
-1. 均匀网格邻居搜索，输出真实邻居分布；
-2. 14 方向覆盖度 + 邻居阈值的自由面/飞溅分类；
-3. 二阶 3D WLS 9×9 矩矩阵；
-4. Cholesky + 正则化，统计病态与失败粒子；
-5. 二阶多项式制造解，验证梯度和 Laplacian 重构；
-6. `bulk_uniform`、`wall_film`、`rain_injection`、`narrow_gap` 四种负载；
-7. 输出 JSON/CSV，可与舜云 profile 和真实场景统计对齐；
-8. 提供 CUDA 的分类和 WLS 矩阵装配 kernel，用于后续 GPU 驱动集成。
+1. **WLS 算子正确性**：验证 3D 二阶矩矩阵、Cholesky 多右端求解、梯度和 Laplacian 多项式再现。
+2. **PPE 稀疏求解负载**：构造与粒子邻居图一致的稀疏压力矩阵，用离散制造解验证 BiCGStab 和统计工业负载。
 
-## 当前定位
+这种拆分是有意设计的：先分别证明局部微分算子和全局稀疏求解器，再在下一版将 WLS Laplacian 权重接入 PPE，避免两类错误相互掩盖。
 
-这是第一阶段“算法理解 + 负载统计”版本。CPU 路径是可执行参考实现；CUDA 文件包含工业热点 kernel，但尚未接入完整 GPU 驱动、PPE 和 BiCGStab。
+## 已实现
 
-## 编译和运行
+- 均匀网格邻居搜索与邻居分布统计；
+- 14 方向覆盖分类；
+- Interior / FreeSurface / Splash / NearWall / Wall；
+- 3D 二阶 9×9 WLS；
+- Cholesky 分解、regularization 统计；
+- 二阶多项式梯度和 Laplacian 制造解；
+- 近壁 Neumann 与虚拟点的负载计数接口；
+- CSR PPE 稀疏矩阵；
+- 离散制造压力解；
+- CPU BiCGStab；
+- PPE unknown、NNZ、迭代数、残差和误差统计；
+- bulk、wall film、rain injection、narrow gap 四类负载。
+
+## 当前 PPE 的边界
+
+v0.2 的 PPE 使用稳定的 graph-Laplacian 系数来验证：
+
+- 稀疏矩阵规模；
+- 邻居间接访存；
+- BiCGStab 迭代负载；
+- 不同工业粒子分布对 NNZ 和收敛的影响。
+
+它还不是最终 LS-MPS PPE 离散。下一版将使用已验证的 WLS 局部分解生成压力 Laplacian 行权重，并加入真正的自由面 Dirichlet、近壁 Neumann 和虚拟粒子贡献。
+
+## 构建与运行
 
 ```bash
 make
@@ -23,42 +41,29 @@ make smoke
 make suite
 ```
 
-结果写入 `results/*.json` 和 `results/*.csv`。
+单场景：
 
-## 场景含义
+```bash
+./bin/lsmps-bench config/rain_injection.cfg results
+```
 
-- `bulk_uniform`：规则内部粒子，测 WLS 理想吞吐和数学正确性。
-- `wall_film`：薄水膜 + 底部壁面，制造单侧邻居和近壁病态负载。
-- `rain_injection`：水膜 + 空中孤立粒子，制造 splash、动态注入和 CNL 重建压力。
-- `narrow_gap`：上下壁面之间的少层粒子，模拟齿轮箱窄间隙。
-- `industrial_3m_template`：300 万粒子 GPU 目标模板，CPU 参考不建议直接运行。
+## v0.2 CPU 测试结果摘要
 
-## 输出指标
+| Case | Particles | PPE unknowns | NNZ | BiCGStab iterations | PPE relative L2 |
+|---|---:|---:|---:|---:|---:|
+| bulk_uniform | 50,000 | 6,000 | 160,953 | 265 | 3.72e-5 |
+| wall_film | 80,000 | 6,000 | 76,247 | 394 | 1.75e-5 |
+| rain_injection | 100,000 | 6,000 | 76,157 | 351 | 1.31e-5 |
+| narrow_gap | 80,000 | 6,000 | 76,251 | 359 | 2.08e-5 |
 
-- 各粒子类型数量；
-- 邻居均值、P50/P90/P99；
-- 邻居容量截断数量；
-- NeighborSearch、Classification、WLS 耗时；
-- WLS 正常、正则化、失败数量；
-- 梯度与 Laplacian 制造解误差。
+WLS 二阶多项式再现的梯度 RMS 误差约为 1e-13 至 1e-11，Laplacian RMS 误差约为 1e-11 至 1e-9。
 
-## 与工业实现的对应
+## 下一步
 
-| PPT/工业模块 | Benchmark 对应 |
-|---|---|
-| CNL + 粒子 CSR | CPU uniform-grid neighbor list；GPU 驱动待接入 CSR |
-| 自由面/飞溅识别 | `classify_particle` / `classify_surface_splash` |
-| 9×9 矩矩阵 | `run_wls` / `assemble_wls_upper45` |
-| Cholesky + 寄存器压缩 | CPU Cholesky；CUDA 上三角 45 元素存储 |
-| 近壁病态 | `wall_film`、`narrow_gap` |
-| 注入导致 CNL 重建 | `rain_injection` 配置中的注入和重建参数 |
-| PPE/BiCGStab | 下一阶段加入，先用制造解锁定 WLS 正确性 |
-
-## 下一阶段
-
-1. GPU CSR 构建和端到端 driver；
-2. Neumann WLS 约束与虚拟粒子；
-3. PPE 组装与纯散度源项；
-4. Jacobi + BiCGStab；
-5. 粒子注入、删除和 compaction；
-6. 输出 Mparticles/s、Mpairs/s、迭代数和算子占比。
+1. 将 WLS Laplacian 行权重接入 PPE；
+2. 实现自由面压力 Dirichlet；
+3. 实现近壁 Neumann 约束矩阵；
+4. 实现虚拟粒子的真实几何补点；
+5. 加入 Jacobi 预条件器；
+6. CUDA 化 CSR 邻居、WLS Cholesky、PPE assembly、SpMV 与 reduction；
+7. 增加真实注入/删除和 CNL rebuild 时间序列。

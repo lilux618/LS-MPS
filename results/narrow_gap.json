@@ -1,8 +1,8 @@
 {
   "case": "narrow_gap",
   "particles": 80000,
-  "particle_types": {"interior": 39984, "free_surface": 269, "splash": 0, "near_wall": 6773, "wall": 32974},
-  "neighbors": {"pairs": 2237024, "mean": 27.962800, "p50": 31, "p90": 32, "p99": 32, "truncated": 0},
-  "timing_ms": {"neighbor": 111.362442, "classify": 21.200307, "wls": 8.587816},
-  "wls": {"sampled": 2478, "ok": 2478, "regularized": 0, "failed": 0, "gradient_rms_error": 0.000000, "laplacian_rms_error": 0.000000}
+  "types": {"interior": 39984, "free_surface": 269, "splash": 0, "near_wall": 6773, "wall": 32974},
+  "neighbors": {"pairs": 2237024, "mean": 27.96280000, "p50": 31, "p90": 32, "p99": 32, "truncated": 0},
+  "wls": {"sampled": 2478, "regularized": 0, "failed": 0, "virtual_points": 381, "gradient_rms_error": 0.00000000, "laplacian_rms_error": 0.00000000},
+  "ppe": {"unknowns": 6000, "nnz": 76251, "dirichlet": 74000, "neumann": 2969, "failed_rows": 0, "iterations": 359, "converged": true, "final_residual": 0.00032549, "relative_l2_error": 0.00002084, "assembly_ms": 4.15410800, "solve_ms": 45.17186300}
 }
