@@ -1,8 +1,0 @@
-{
-  "case": "narrow_gap",
-  "particles": 80000,
-  "particle_types": {"interior": 39984, "free_surface": 269, "splash": 0, "near_wall": 6773, "wall": 32974},
-  "neighbors": {"pairs": 2237024, "mean": 27.962800, "p50": 31, "p90": 32, "p99": 32, "truncated": 0},
-  "timing_ms": {"neighbor": 111.362442, "classify": 21.200307, "wls": 8.587816},
-  "wls": {"sampled": 2478, "ok": 2478, "regularized": 0, "failed": 0, "gradient_rms_error": 0.000000, "laplacian_rms_error": 0.000000}
-}

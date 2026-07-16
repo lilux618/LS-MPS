@@ -1,8 +1,0 @@
-{
-  "case": "rain_injection",
-  "particles": 100000,
-  "particle_types": {"interior": 53408, "free_surface": 2259, "splash": 21701, "near_wall": 7503, "wall": 15129},
-  "neighbors": {"pairs": 2258508, "mean": 22.585080, "p50": 25, "p90": 32, "p99": 34, "truncated": 0},
-  "timing_ms": {"neighbor": 171.321329, "classify": 26.715712, "wls": 6.668247},
-  "wls": {"sampled": 2619, "ok": 2619, "regularized": 0, "failed": 0, "gradient_rms_error": 0.000000, "laplacian_rms_error": 0.000000}
-}

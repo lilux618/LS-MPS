@@ -23,3 +23,14 @@ clean:
 	rm -rf bin obj results/*.json results/*.csv
 
 .PHONY: all smoke suite cuda-objects clean
+
+rain-demo:
+	python3 python/rain_plate_cpu.py --output outputs/rain_plate
+
+calibrate:
+	python3 python/workload_calibration.py \
+	  --target config/customer_car_rain_profile.example.json \
+	  --baseline config/plate_rain_baseline_profile.json \
+	  --out outputs/calibration
+
+.PHONY: rain-demo calibrate

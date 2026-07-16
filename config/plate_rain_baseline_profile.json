@@ -1,0 +1,18 @@
+{
+  "name": "inclined_plate_rain_baseline",
+  "metrics": {
+    "particles": 100000,
+    "neighbor_mean": 22.6,
+    "neighbor_p90": 32,
+    "neighbor_p99": 34,
+    "near_wall_ratio": 0.075,
+    "free_surface_ratio": 0.023,
+    "splash_ratio": 0.217,
+    "virtual_particle_ratio": 0.035,
+    "wls_ill_conditioned_ratio": 0.012,
+    "ppe_iterations": 12,
+    "cnl_rebuild_interval": 10,
+    "injected_per_step": 1200,
+    "deleted_per_step": 900
+  }
+}

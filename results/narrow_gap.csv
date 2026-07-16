@@ -1,2 +1,0 @@
-case,particles,interior,free_surface,splash,near_wall,wall,neighbor_mean,p50,p90,p99,truncated,neighbor_ms,classify_ms,wls_ms,wls_sampled,wls_regularized,wls_failed,gradient_rms_error,laplacian_rms_error
-narrow_gap,80000,39984,269,0,6773,32974,27.9628,31,32,32,0,111.362,21.2003,8.58782,2478,0,0,1.32964e-13,3.59445e-11

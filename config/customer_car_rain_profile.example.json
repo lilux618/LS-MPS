@@ -1,0 +1,35 @@
+{
+  "name": "customer_car_rain_profile_example",
+  "description": "Example only. Replace with statistics exported from the customer profile.",
+  "metrics": {
+    "particles": 3000000,
+    "neighbor_mean": 46,
+    "neighbor_p90": 68,
+    "neighbor_p99": 92,
+    "near_wall_ratio": 0.23,
+    "free_surface_ratio": 0.27,
+    "splash_ratio": 0.14,
+    "virtual_particle_ratio": 0.11,
+    "wls_ill_conditioned_ratio": 0.075,
+    "ppe_iterations": 38,
+    "cnl_rebuild_interval": 8,
+    "injected_per_step": 24000,
+    "deleted_per_step": 21500,
+    "timeline_steps": 200
+  },
+  "weights": {
+    "particles": 1.0,
+    "neighbor_mean": 2.0,
+    "neighbor_p90": 2.0,
+    "neighbor_p99": 2.5,
+    "near_wall_ratio": 2.0,
+    "free_surface_ratio": 1.5,
+    "splash_ratio": 1.5,
+    "virtual_particle_ratio": 1.5,
+    "wls_ill_conditioned_ratio": 2.0,
+    "ppe_iterations": 2.5,
+    "cnl_rebuild_interval": 1.0,
+    "injected_per_step": 1.0,
+    "deleted_per_step": 1.0
+  }
+}
