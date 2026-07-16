@@ -1,0 +1,2 @@
+case,particles,interior,free_surface,splash,near_wall,wall,neighbor_mean,p50,p90,p99,truncated,neighbor_ms,classify_ms,wls_ms,wls_sampled,wls_regularized,wls_failed,gradient_rms_error,laplacian_rms_error
+bulk_uniform,50000,46673,1259,0,2068,0,30.2314,32,32,32,0,72.3981,22.2746,9.42661,4096,0,0,2.2205e-13,4.39903e-11

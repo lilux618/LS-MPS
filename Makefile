@@ -1,37 +1,25 @@
-# LS-MPS GPU Minimal Implementation Makefile
-# Target: NVIDIA A100 (sm_80), CUDA 12.6.0
+CXX ?= g++
+CXXFLAGS ?= -O3 -std=c++17 -Wall -Wextra -Wpedantic -Iinclude
+NVCC ?= nvcc
+NVCCFLAGS ?= -O3 -std=c++17 -arch=sm_80
 
-NVCC := nvcc
-ARCH := -arch=sm_80
-CUDA_FLAGS := -O3 -use_fast_math --expt-relaxed-constexpr -lineinfo
-LDFLAGS := -lcusparse -lcublas
+all: bin/lsmps-bench
 
-TARGET := lsmps
-SRCDIR := src
-OBJDIR := obj
+bin/lsmps-bench: src/main.cpp src/lsmps.cpp include/lsmps.hpp
+	@mkdir -p bin results
+	$(CXX) $(CXXFLAGS) src/main.cpp src/lsmps.cpp -o $@
 
-SRCS := $(SRCDIR)/lsmps.cu
-OBJS := $(OBJDIR)/lsmps.o
+cuda-objects: src/cuda_workload.cu
+	@mkdir -p obj
+	$(NVCC) $(NVCCFLAGS) -c src/cuda_workload.cu -o obj/cuda_workload.o
 
-all: $(TARGET)
+smoke: all
+	./bin/lsmps-bench config/smoke.cfg results
 
-$(TARGET): $(OBJS)
-	$(NVCC) $(ARCH) $(LDFLAGS) -o $@ $^
-
-$(OBJDIR)/lsmps.o: $(SRCDIR)/lsmps.cu
-	@mkdir -p $(OBJDIR)
-	$(NVCC) $(ARCH) $(CUDA_FLAGS) -c -o $@ $<
-
-run-small: $(TARGET)
-	./$(TARGET) config/small.yaml
-
-run-benchmark: $(TARGET)
-	./$(TARGET) config/benchmark.yaml
-
-profile: $(TARGET)
-	nsys profile --trace=cuda,nvtx ./$(TARGET) config/benchmark.yaml
+suite: all
+	bash scripts/run_suite.sh
 
 clean:
-	rm -rf $(OBJDIR) $(TARGET)
+	rm -rf bin obj results/*.json results/*.csv
 
-.PHONY: all clean run-small run-benchmark profile
+.PHONY: all smoke suite cuda-objects clean

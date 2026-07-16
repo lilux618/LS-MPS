@@ -1,0 +1,8 @@
+{
+  "case": "bulk_uniform",
+  "particles": 50000,
+  "particle_types": {"interior": 46673, "free_surface": 1259, "splash": 0, "near_wall": 2068, "wall": 0},
+  "neighbors": {"pairs": 1511570, "mean": 30.231400, "p50": 32, "p90": 32, "p99": 32, "truncated": 0},
+  "timing_ms": {"neighbor": 72.398080, "classify": 22.274618, "wls": 9.426611},
+  "wls": {"sampled": 4096, "ok": 4096, "regularized": 0, "failed": 0, "gradient_rms_error": 0.000000, "laplacian_rms_error": 0.000000}
+}
