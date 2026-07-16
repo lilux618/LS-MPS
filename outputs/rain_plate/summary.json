@@ -1,0 +1,14 @@
+{
+  "case": "inclined_plate_rain",
+  "model": "CPU particle visual baseline; penalty pressure pending WLS-PPE integration",
+  "steps": 180,
+  "dt": 0.0015,
+  "injected": 1500,
+  "outflow": 0,
+  "remaining": 1500,
+  "mass_balance_error_particles": 0,
+  "final_film_mean_m": 0.056454729500056464,
+  "final_film_max_m": 0.07162879165192763,
+  "max_speed_mps": 3.7626433790261187,
+  "frames": 31
+}

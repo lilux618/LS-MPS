@@ -1,8 +1,0 @@
-{
-  "case": "wall_film",
-  "particles": 80000,
-  "types": {"interior": 56852, "free_surface": 2891, "splash": 0, "near_wall": 6801, "wall": 13456},
-  "neighbors": {"pairs": 2237024, "mean": 27.96280000, "p50": 31, "p90": 32, "p99": 32, "truncated": 0},
-  "wls": {"sampled": 3502, "regularized": 0, "failed": 0, "virtual_points": 540, "gradient_rms_error": 0.00000000, "laplacian_rms_error": 0.00000000},
-  "ppe": {"unknowns": 6000, "nnz": 76247, "dirichlet": 74000, "neumann": 3048, "failed_rows": 0, "iterations": 394, "converged": true, "final_residual": 0.00040836, "relative_l2_error": 0.00001746, "assembly_ms": 5.50050000, "solve_ms": 48.97289800}
-}

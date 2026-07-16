@@ -67,3 +67,27 @@ WLS 二阶多项式再现的梯度 RMS 误差约为 1e-13 至 1e-11，Laplacian 
 5. 加入 Jacobi 预条件器；
 6. CUDA 化 CSR 邻居、WLS Cholesky、PPE assembly、SpMV 与 reduction；
 7. 增加真实注入/删除和 CNL rebuild 时间序列。
+
+## v0.3 dynamic rain visualization
+
+Run:
+
+```bash
+make rain-demo
+```
+
+Outputs are written to `outputs/rain_plate/`:
+
+- `inclined_plate_rain.gif`: speed-coloured particle animation
+- `frames/frame_*.png`: individual frames
+- `metrics.csv`: injection, mass balance, neighbor and film metrics
+- `summary.json`: run summary
+
+### Important model boundary
+
+The v0.3 rain demo validates deterministic particle injection, neighbor-load
+growth, inclined-wall contact, film transport, outflow accounting, and the
+visualization pipeline. It currently uses a pairwise penalty pressure for the
+dynamic visual baseline. The independently tested C++ WLS and PPE modules are
+not yet coupled into this time integrator. Therefore the animation is a
+benchmark-development result, not a validated industrial LS-MPS prediction.

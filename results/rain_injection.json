@@ -1,8 +1,0 @@
-{
-  "case": "rain_injection",
-  "particles": 100000,
-  "types": {"interior": 53408, "free_surface": 2259, "splash": 21701, "near_wall": 7503, "wall": 15129},
-  "neighbors": {"pairs": 2258508, "mean": 22.58508000, "p50": 25, "p90": 32, "p99": 34, "truncated": 0},
-  "wls": {"sampled": 2619, "regularized": 0, "failed": 0, "virtual_points": 412, "gradient_rms_error": 0.00000000, "laplacian_rms_error": 0.00000000},
-  "ppe": {"unknowns": 6000, "nnz": 76157, "dirichlet": 94000, "neumann": 3000, "failed_rows": 0, "iterations": 351, "converged": true, "final_residual": 0.00054411, "relative_l2_error": 0.00001308, "assembly_ms": 4.22787000, "solve_ms": 43.54236300}
-}

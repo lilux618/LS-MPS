@@ -23,3 +23,6 @@ clean:
 	rm -rf bin obj results/*.json results/*.csv
 
 .PHONY: all smoke suite cuda-objects clean
+
+rain-demo:
+	python3 python/rain_plate_cpu.py --output outputs/rain_plate
