@@ -1,0 +1,2 @@
+case,particles,interior,free_surface,splash,near_wall,wall,neighbor_mean,p50,p90,p99,truncated,neighbor_ms,classify_ms,wls_ms,wls_sampled,wls_regularized,wls_failed,gradient_rms_error,laplacian_rms_error
+rain_injection,100000,53408,2259,21701,7503,15129,22.5851,25,32,34,0,171.321,26.7157,6.66825,2619,0,0,2.22943e-11,1.34014e-09

@@ -1,0 +1,2 @@
+case,particles,interior,free_surface,splash,near_wall,wall,neighbor_mean,p50,p90,p99,truncated,neighbor_ms,classify_ms,wls_ms,wls_sampled,wls_regularized,wls_failed,gradient_rms_error,laplacian_rms_error
+wall_film,80000,56852,2891,0,6801,13456,27.9628,31,32,32,0,113.165,26.2355,9.10242,3502,0,0,1.85074e-13,3.71036e-11
