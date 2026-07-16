@@ -1,0 +1,46 @@
+# LS-MPS 300W (3 Million) Particle Gearbox Load Test
+# ===================================================
+# Target: match industrial 300W gearbox simulation scale
+#
+# Particle layout: 144x144x144 = 2,985,984 particles
+#   (Close to 300万 / 3 million)
+#
+# This config tests:
+#   1. Large-scale memory allocation and kernel launch
+#   2. Per-step throughput at industrial scale
+#   3. Per-operator time distribution for comparison with industrial profile
+#   4. BiCGSTAB convergence behavior at scale
+
+name: "gearbox_300w"
+case_type: "hydrostatic"
+
+particle:
+  l0: 0.001
+  re: 0.0021
+
+fluid:
+  rho: 880.0
+  nu: 5.0e-5
+
+physical:
+  gx: 0.0
+  gy: 0.0
+  gz: -9.8
+
+mps:
+  alpha: 0.02
+  beta: 0.97
+  lambda_shift: 0.1
+
+time:
+  dt: 0.00001
+  steps: 5
+
+domain:
+  nx: 144
+  ny: 144
+  nz: 144
+
+output:
+  verbose: true
+  check_ref: false
