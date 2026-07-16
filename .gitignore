@@ -1,0 +1,7 @@
+*.o
+*.d
+*.so
+*.a
+lsmps
+obj/
+*.pdf
