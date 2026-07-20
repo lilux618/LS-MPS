@@ -1,0 +1,48 @@
+{
+  "coverage_cells": 32,
+  "wet_distance_factor": 3.0,
+  "min_particles_per_cell": 1,
+  "sampling_windows": [
+    {
+      "name": "impact_zone",
+      "u_range": [
+        0.1,
+        0.35
+      ]
+    },
+    {
+      "name": "film_zone",
+      "u_range": [
+        0.4,
+        0.7
+      ]
+    },
+    {
+      "name": "outlet_zone",
+      "u_range": [
+        0.75,
+        0.95
+      ]
+    }
+  ],
+  "flow_sections": [
+    {
+      "name": "mid_section",
+      "u": 0.55,
+      "max_normal_distance_factor": 5.0
+    },
+    {
+      "name": "outlet_section",
+      "u": 0.9,
+      "max_normal_distance_factor": 5.0
+    }
+  ],
+  "comparison_tolerances": {
+    "coverage_ratio_rmse": 0.08,
+    "fluid_volume_relative_l2": 0.1,
+    "cumulative_flow_relative_error": 0.1,
+    "film_mean_relative_l2": 0.15,
+    "max_relative_mass_error": 0.01,
+    "max_invalid_removed_ratio": 0.02
+  }
+}
