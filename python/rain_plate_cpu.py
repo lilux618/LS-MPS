@@ -14,6 +14,7 @@ import csv
 import json
 import math
 from dataclasses import dataclass
+from typing import Any
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -30,6 +31,8 @@ class Params:
     save_every: int = 6
     inject_steps: int = 125
     inject_per_step: int = 12
+    target_inflow_m3s: float = 0.013824  # 12 * 0.012^3 / 0.0015
+    preserve_physical_inflow: bool = True
     l0: float = 0.012
     re_ratio: float = 2.1
     gravity: float = 9.81
@@ -45,6 +48,7 @@ class Params:
     max_speed: float = 6.0
     width: float = 1.0
     height: float = 0.72
+    particle_volume: float = 1.728e-6  # effective 3D volume represented by one particle
 
 
 def plate_z(x: np.ndarray | float, p: Params) -> np.ndarray | float:
@@ -61,10 +65,17 @@ def plate_vectors(p: Params) -> tuple[np.ndarray, np.ndarray]:
 
 
 def inject(pos: np.ndarray, vel: np.ndarray, ids: np.ndarray, next_id: int,
-           step: int, p: Params, rng: np.random.Generator):
+           step: int, p: Params, rng: np.random.Generator, volume_credit: float):
     if step >= p.inject_steps:
-        return pos, vel, ids, next_id, 0
-    n = p.inject_per_step
+        return pos, vel, ids, next_id, 0, volume_credit
+    if p.preserve_physical_inflow:
+        volume_credit += p.target_inflow_m3s * p.dt
+        n = int(volume_credit // p.particle_volume)
+        volume_credit -= n * p.particle_volume
+    else:
+        n = p.inject_per_step
+    if n <= 0:
+        return pos, vel, ids, next_id, 0, volume_credit
     # Three bands produce a visible rain curtain while keeping deterministic load.
     x = rng.uniform(0.16, 0.78, n)
     z = rng.uniform(0.58, 0.70, n)
@@ -73,7 +84,7 @@ def inject(pos: np.ndarray, vel: np.ndarray, ids: np.ndarray, next_id: int,
     new_vel = np.column_stack([rng.normal(0.0, 0.05, n), rng.normal(-1.8, 0.08, n)])
     new_ids = np.arange(next_id, next_id + n, dtype=np.int64)
     return (np.vstack([pos, new_pos]), np.vstack([vel, new_vel]),
-            np.concatenate([ids, new_ids]), next_id + n, n)
+            np.concatenate([ids, new_ids]), next_id + n, n, volume_credit)
 
 
 def pair_dynamics(pos: np.ndarray, vel: np.ndarray, p: Params):
@@ -133,10 +144,14 @@ def enforce_plate(pos: np.ndarray, vel: np.ndarray, p: Params):
 
 
 def remove_outflow(pos: np.ndarray, vel: np.ndarray, ids: np.ndarray, p: Params):
-    keep = ((pos[:, 0] > -0.08) & (pos[:, 0] < 1.10) &
-            (pos[:, 1] > -0.08) & (pos[:, 1] < p.height + 0.10))
-    removed = int(np.count_nonzero(~keep))
-    return pos[keep], vel[keep], ids[keep], removed
+    """Remove particles and distinguish intended outlet removal from numerical loss."""
+    outlet = (pos[:, 0] >= 1.10) & (pos[:, 1] > -0.08) & (pos[:, 1] < p.height + 0.10)
+    invalid = ((pos[:, 0] <= -0.08) | (pos[:, 1] <= -0.08) |
+               (pos[:, 1] >= p.height + 0.10))
+    remove = outlet | invalid
+    keep = ~remove
+    return (pos[keep], vel[keep], ids[keep],
+            int(np.count_nonzero(outlet)), int(np.count_nonzero(invalid)))
 
 
 def film_metrics(pos: np.ndarray, p: Params):
@@ -159,6 +174,79 @@ def film_metrics(pos: np.ndarray, p: Params):
             float(np.max(thickness)) if thickness else 0.0,
             int(np.count_nonzero(mask)))
 
+
+
+def plate_coordinates(pos: np.ndarray, p: Params) -> tuple[np.ndarray, np.ndarray]:
+    """Return normalized tangential coordinate u in [0,1] and wall-normal distance."""
+    if len(pos) == 0:
+        return np.empty(0), np.empty(0)
+    t, nvec = plate_vectors(p)
+    origin = np.array([p.plate_x0, p.plate_left_z], dtype=float)
+    rel = pos - origin
+    length = float(np.linalg.norm(np.array([p.plate_x1-p.plate_x0, p.plate_right_z-p.plate_left_z])))
+    u = (rel @ t) / max(length, 1.0e-12)
+    d = rel @ nvec
+    return u, d
+
+
+def load_validation_config(path: str | None) -> dict[str, Any]:
+    if path is None:
+        return {"sampling_windows": [], "flow_sections": [], "coverage_cells": 32,
+                "wet_distance_factor": 3.0, "min_particles_per_cell": 1}
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def compute_window_metrics(pos: np.ndarray, p: Params, cfg: dict[str, Any], time: float) -> list[dict[str, Any]]:
+    u, d = plate_coordinates(pos, p)
+    rows: list[dict[str, Any]] = []
+    wet_dist = float(cfg.get("wet_distance_factor", 3.0)) * p.l0
+    default_cells = int(cfg.get("coverage_cells", 32))
+    min_per_cell = int(cfg.get("min_particles_per_cell", 1))
+    for w in cfg.get("sampling_windows", []):
+        a, b = map(float, w["u_range"])
+        cells = int(w.get("coverage_cells", default_cells))
+        mask = (u >= a) & (u < b) & (d >= 0.0) & (d <= wet_dist)
+        counts, _ = np.histogram(u[mask], bins=np.linspace(a, b, cells + 1))
+        coverage = float(np.count_nonzero(counts >= min_per_cell) / max(cells, 1))
+        thickness = []
+        if np.any(mask):
+            for lo, hi in zip(np.linspace(a,b,cells+1)[:-1], np.linspace(a,b,cells+1)[1:]):
+                mm = mask & (u >= lo) & (u < hi)
+                if np.any(mm):
+                    thickness.append(float(np.max(d[mm]) + p.l0))
+        rows.append({
+            "time": time, "window": w["name"], "particle_count": int(np.count_nonzero(mask)),
+            "fluid_volume_m3": float(np.count_nonzero(mask) * p.particle_volume),
+            "coverage_ratio": coverage,
+            "film_mean_m": float(np.mean(thickness)) if thickness else 0.0,
+            "film_p90_m": float(np.quantile(thickness, 0.90)) if thickness else 0.0,
+            "film_max_m": float(np.max(thickness)) if thickness else 0.0,
+        })
+    return rows
+
+
+def compute_section_crossings(prev_pos: np.ndarray, prev_ids: np.ndarray, pos: np.ndarray, ids: np.ndarray,
+                              p: Params, cfg: dict[str, Any], dt: float, time: float) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    if len(prev_ids) == 0 or len(ids) == 0:
+        for sec in cfg.get("flow_sections", []):
+            rows.append({"time": time, "section": sec["name"], "crossing_particle_count": 0,
+                         "instantaneous_flow_rate_m3s": 0.0, "crossing_volume_m3": 0.0})
+        return rows
+    common, ip, ic = np.intersect1d(prev_ids, ids, assume_unique=True, return_indices=True)
+    if len(common) == 0:
+        return rows
+    up, _ = plate_coordinates(prev_pos[ip], p)
+    uc, dc = plate_coordinates(pos[ic], p)
+    for sec in cfg.get("flow_sections", []):
+        s = float(sec["u"])
+        max_d = float(sec.get("max_normal_distance_factor", 5.0)) * p.l0
+        crossed = (up < s) & (uc >= s) & (dc >= 0.0) & (dc <= max_d)
+        n = int(np.count_nonzero(crossed))
+        vol = n * p.particle_volume
+        rows.append({"time": time, "section": sec["name"], "crossing_particle_count": n,
+                     "instantaneous_flow_rate_m3s": vol / dt, "crossing_volume_m3": vol})
+    return rows
 
 def render_frame(pos, vel, counts, step, stats, out_path: Path, p: Params):
     speed = np.linalg.norm(vel, axis=1) if len(vel) else np.array([])
@@ -189,7 +277,7 @@ def render_frame(pos, vel, counts, step, stats, out_path: Path, p: Params):
     plt.close(fig)
 
 
-def run(p: Params, out: Path):
+def run(p: Params, out: Path, validation_cfg: dict[str, Any] | None = None):
     rng = np.random.default_rng(p.seed)
     out.mkdir(parents=True, exist_ok=True)
     frames = out / "frames"
@@ -200,11 +288,20 @@ def run(p: Params, out: Path):
     next_id = 0
     injected_total = 0
     outflow_total = 0
+    invalid_removed_total = 0
+    volume_credit = 0.0
     rows = []
     frame_paths = []
+    validation_cfg = validation_cfg or {"sampling_windows": [], "flow_sections": []}
+    window_rows: list[dict[str, Any]] = []
+    section_rows: list[dict[str, Any]] = []
+    cumulative_section_volume: dict[str, float] = {s["name"]: 0.0 for s in validation_cfg.get("flow_sections", [])}
 
     for step in range(p.steps):
-        pos, vel, ids, next_id, nin = inject(pos, vel, ids, next_id, step, p, rng)
+        prev_pos = pos.copy()
+        prev_ids = ids.copy()
+        pos, vel, ids, next_id, nin, volume_credit = inject(
+            pos, vel, ids, next_id, step, p, rng, volume_credit)
         injected_total += nin
         acc, pairs, counts = pair_dynamics(pos, vel, p)
         if len(pos):
@@ -222,18 +319,27 @@ def run(p: Params, out: Path):
             vel[left, 0] = np.abs(vel[left, 0]) * 0.1
         else:
             hits = 0
-        pos, vel, ids, nout = remove_outflow(pos, vel, ids, p)
+        pos, vel, ids, nout, ninvalid = remove_outflow(pos, vel, ids, p)
         outflow_total += nout
+        invalid_removed_total += ninvalid
         # counts are from pre-removal positions; only histogram aggregates are recorded.
         film_mean, film_max, film_particles = film_metrics(pos, p)
         vmax = float(np.max(np.linalg.norm(vel, axis=1))) if len(vel) else 0.0
-        mass_error = injected_total - outflow_total - len(pos)
-        row = dict(step=step, time=step*p.dt, particles=len(pos), injected_total=injected_total,
-                   outflow_total=outflow_total, mass_error=mass_error, pairs=pairs,
+        mass_error = injected_total - outflow_total - invalid_removed_total - len(pos)
+        row = dict(step=step, time=(step+1)*p.dt, particles=len(pos), injected_total=injected_total,
+                   outflow_total=outflow_total, invalid_removed_total=invalid_removed_total,
+                   mass_error=mass_error, pairs=pairs,
                    neighbor_mean=float(np.mean(counts)) if len(counts) else 0.0,
                    wall_contacts=hits, film_particles=film_particles,
                    film_mean=film_mean, film_max=film_max, max_speed=vmax)
         rows.append(row)
+        now = (step + 1) * p.dt
+        window_rows.extend(compute_window_metrics(pos, p, validation_cfg, now))
+        sec_step = compute_section_crossings(prev_pos, prev_ids, pos, ids, p, validation_cfg, p.dt, now)
+        for sr in sec_step:
+            cumulative_section_volume[sr["section"]] = cumulative_section_volume.get(sr["section"], 0.0) + sr["crossing_volume_m3"]
+            sr["cumulative_volume_m3"] = cumulative_section_volume[sr["section"]]
+        section_rows.extend(sec_step)
         if step % p.save_every == 0 or step == p.steps - 1:
             fp = frames / f"frame_{step:04d}.png"
             render_frame(pos, vel, counts, step, row, fp, p)
@@ -242,6 +348,28 @@ def run(p: Params, out: Path):
     with (out / "metrics.csv").open("w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         w.writeheader(); w.writerows(rows)
+    if window_rows:
+        with (out / "sampling_windows.csv").open("w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=list(window_rows[0].keys())); w.writeheader(); w.writerows(window_rows)
+    if section_rows:
+        with (out / "flow_sections.csv").open("w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=list(section_rows[0].keys())); w.writeheader(); w.writerows(section_rows)
+    mass_rows = []
+    for r in rows:
+        injected_v = r["injected_total"] * p.particle_volume
+        remaining_v = r["particles"] * p.particle_volume
+        out_v = r["outflow_total"] * p.particle_volume
+        invalid_v = r["invalid_removed_total"] * p.particle_volume
+        denom = max(injected_v, p.particle_volume)
+        balance = injected_v - remaining_v - out_v - invalid_v
+        mass_rows.append({"time": r["time"], "injected_volume_m3": injected_v,
+                          "remaining_volume_m3": remaining_v, "outlet_volume_m3": out_v,
+                          "invalid_removed_volume_m3": invalid_v,
+                          "balance_error_m3": balance,
+                          "relative_mass_error": abs(balance)/denom,
+                          "invalid_removed_ratio": invalid_v/denom})
+    with (out / "mass_conservation.csv").open("w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(mass_rows[0].keys())); w.writeheader(); w.writerows(mass_rows)
     summary = {
         "case": "inclined_plate_rain",
         "model": "CPU particle visual baseline; penalty pressure pending WLS-PPE integration",
@@ -249,12 +377,19 @@ def run(p: Params, out: Path):
         "dt": p.dt,
         "injected": injected_total,
         "outflow": outflow_total,
+        "invalid_removed": invalid_removed_total,
         "remaining": len(pos),
-        "mass_balance_error_particles": injected_total - outflow_total - len(pos),
+        "mass_balance_error_particles": injected_total - outflow_total - invalid_removed_total - len(pos),
+        "target_inflow_m3s": p.target_inflow_m3s,
+        "realized_injected_volume_m3": injected_total * p.particle_volume,
         "final_film_mean_m": rows[-1]["film_mean"],
         "final_film_max_m": rows[-1]["film_max"],
         "max_speed_mps": max(r["max_speed"] for r in rows),
         "frames": len(frame_paths),
+        "sampling_windows": [w["name"] for w in validation_cfg.get("sampling_windows", [])],
+        "flow_sections": [s["name"] for s in validation_cfg.get("flow_sections", [])],
+        "max_relative_mass_error": max(r["relative_mass_error"] for r in mass_rows),
+        "max_invalid_removed_ratio": max(r["invalid_removed_ratio"] for r in mass_rows),
     }
     (out / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
@@ -273,9 +408,19 @@ def main():
     ap.add_argument("--output", default="outputs/rain_plate")
     ap.add_argument("--steps", type=int, default=180)
     ap.add_argument("--inject-per-step", type=int, default=12)
+    ap.add_argument("--l0", type=float, default=0.012)
+    ap.add_argument("--dt", type=float, default=0.0015)
+    ap.add_argument("--validation-config", default="config/rain_plate_validation.json")
+    ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--target-inflow-m3s", type=float, default=0.013824)
+    ap.add_argument("--fixed-particles-per-step", action="store_true",
+                    help="Disable physical inflow preservation and inject a fixed count each step")
     args = ap.parse_args()
-    p = Params(steps=args.steps, inject_per_step=args.inject_per_step)
-    run(p, Path(args.output))
+    p = Params(steps=args.steps, inject_per_step=args.inject_per_step, l0=args.l0, dt=args.dt,
+               particle_volume=args.l0**3, seed=args.seed,
+               target_inflow_m3s=args.target_inflow_m3s,
+               preserve_physical_inflow=not args.fixed_particles_per_step)
+    run(p, Path(args.output), load_validation_config(args.validation_config))
 
 
 if __name__ == "__main__":

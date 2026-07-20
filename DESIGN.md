@@ -1,4 +1,4 @@
-# Design Notes v0.4
+# Design Notes v0.2
 
 ## 验证分层
 
@@ -8,7 +8,7 @@
 
 ### B. 全局求解层
 
-从相同邻居图构建 CSR 压力矩阵，并使用离散制造解 `b=A*p_exact` 验证 BiCGStab。当前使用 graph Laplacian 作为稳定基线，不宣称它已经是最终 LS-MPS PPE。
+从相同邻居图构建 CSR 压力矩阵，并使用离散制造解 `b=A*p_exact` 验证 BiCGStab。v0.2 使用 graph Laplacian 作为稳定基线，不宣称它已经是最终 LS-MPS PPE。
 
 ### C. 工业 workload 层
 

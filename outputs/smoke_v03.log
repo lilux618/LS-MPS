@@ -1,8 +1,0 @@
-LS-MPS industrial benchmark v0.2
-case=wall_film particles=4000
-types interior=2475 surface=271 splash=0 near_wall=413 wall=841
-neighbors mean=26.05 p50=28 p90=32 p99=32
-WLS sampled=451 regularized=0 failed=0 virtual=94 grad_rms=2.48e-13 lap_rms=4.96e-11
-PPE unknowns=2888 nnz=71857 iterations=282 converged=1 residual=1.14e-04 rel_l2=4.06e-05
-PPE timing(ms) assembly=3.48 solve=25.01
-output=outputs/smoke_v03/wall_film.{json,csv}
